@@ -1,9 +1,9 @@
 import React, { Suspense, useEffect, useRef, useState } from 'react';
 import { Canvas, useLoader, useThree } from '@react-three/fiber';
 import {
-  OrbitControls,
-  MeshRefractionMaterial,
-  Caustics
+OrbitControls,
+MeshRefractionMaterial,
+Caustics
 } from '@react-three/drei';
 import { EffectComposer, Bloom } from '@react-three/postprocessing';
 import { RGBELoader } from 'three-stdlib';
@@ -11,129 +11,258 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js';
 
-function Model({ envMap }: { envMap: THREE.Texture }) {
-  const dracoLoader = new DRACOLoader();
-  dracoLoader.setDecoderPath('https://www.gstatic.com/draco/v1/decoders/');
-  
-  const gltf = useLoader(
-    GLTFLoader,
-    'https://cdn.shopify.com/3d/models/84099c96618f39d1/compression_silver_diamond.glb',
-    (loader) => {
-      (loader as GLTFLoader).setDRACOLoader(dracoLoader);
-    }
-  );
+function Model({ envMap, diamondEnvMap }: { envMap: THREE.Texture; diamondEnvMap?: THREE.Texture }) {
+const dracoLoader = new DRACOLoader();
+dracoLoader.setDecoderPath('https://www.gstatic.com/draco/v1/decoders/');
+const gltf = useLoader(
+GLTFLoader,
+'https://cdn.shopify.com/3d/models/84099c96618f39d1/compression_silver_diamond.glb',
+ (loader) => {
+ (loader as GLTFLoader).setDRACOLoader(dracoLoader);
+ }
+ );
+const groupRef = useRef<THREE.Group>(null!);
+const scale = 5; // Scale control metric
+const enableEffects = true; // True/False switch - set to false to show original GLB
 
-  const groupRef = useRef<THREE.Group>(null!);
+useEffect(() => {
+gltf.scene.children.forEach((child: any, index) => {
+if (child.isMesh) {
+const mesh = child as THREE.Mesh;
+const isDiamond = mesh.name === 'Round';
 
-  useEffect(() => {
-    if (!groupRef.current) return;
+// Apply smooth shading to non-diamond meshes ONLY if effects are enabled
+if (!isDiamond && enableEffects) {
+mesh.geometry.computeVertexNormals();
+}
+}
+});
+}, [gltf, enableEffects]);
 
-    const box = new THREE.Box3().setFromObject(groupRef.current);
-    const size = new THREE.Vector3();
-    box.getSize(size);
-    const scale = 1 / Math.max(size.x, size.y, size.z);
-    groupRef.current.scale.setScalar(scale);
-
-    const heightOffset = box.min.y * scale;
-    groupRef.current.position.y -= heightOffset;
-
-    console.log('✅ Draco model scaled and aligned');
-  }, []);
-
-  return (
-    <group ref={groupRef}>
-      {gltf.scene.children.map((child: any, index: number) => {
-        if (child.isMesh) {
-          const mesh = child as THREE.Mesh;
-          const isDiamond = mesh.name === 'Round';
-
-          return (
-            <mesh
-              key={mesh.name + index}
-              geometry={mesh.geometry}
-              position={mesh.position}
-              rotation={mesh.rotation}
-              scale={mesh.scale}
-            >
-              {isDiamond ? (
-                <MeshRefractionMaterial
-                  envMap={envMap}
-                  bounces={2}
-                  ior={2.4}
-                  fresnel={0}
-                  aberrationStrength={0.001}
-                  color="white"
-                  fastChroma
-                  toneMapped={false}
-                />
-              ) : (
-                <primitive object={mesh.material} attach="material" />
-              )}
-            </mesh>
-          );
-        } else {
-          return <primitive key={index} object={child} />;
-        }
-      })}
-    </group>
-  );
+return (
+<group ref={groupRef} scale={scale}>
+{gltf.scene.children.map((child: any, index: number) => {
+if (child.isMesh) {
+const mesh = child as THREE.Mesh;
+const isDiamond = mesh.name === 'Round';
+return (
+<mesh
+key={mesh.name + index}
+geometry={mesh.geometry}
+position={mesh.position}
+rotation={mesh.rotation}
+scale={mesh.scale}
+>
+{enableEffects && isDiamond ? (
+<MeshRefractionMaterial
+envMap={diamondEnvMap || envMap}
+bounces={3}
+ior={2.8}
+fresnel={1}
+aberrationStrength={0}
+color="white"
+fastChroma={true}
+toneMapped={true}
+transparent={false}
+side={THREE.DoubleSide}
+/>
+ ) : (
+<primitive object={mesh.material} attach="material" />
+ )}
+</mesh>
+ );
+ } else {
+return <primitive key={index} object={child} />;
+ }
+ })}
+</group>
+ );
 }
 
 function Scene() {
-  const [envMap, setEnvMap] = useState<THREE.Texture | null>(null);
-  const { scene } = useThree();
-  const controlsRef = useRef<any>(null);
+const [envMap, setEnvMap] = useState<THREE.Texture | null>(null);
+const [diamondEnvMap, setDiamondEnvMap] = useState<THREE.Texture | null>(null);
+const { scene, gl, camera } = useThree();
+const controlsRef = useRef<any>(null);
+const enableEffects = true; // True/False switch - set to false to disable all effects
+const autoRotateTimeout = useRef<NodeJS.Timeout | null>(null);
 
-  useEffect(() => {
-    new RGBELoader().load(
-      'https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/1k/aerodynamics_workshop_1k.hdr',
-      (hdrTexture) => {
-        hdrTexture.mapping = THREE.EquirectangularReflectionMapping;
-        scene.environment = hdrTexture;
-        // Set white background instead of HDR texture
-        scene.background = new THREE.Color(0xffffff);
-        setEnvMap(hdrTexture);
-      }
-    );
-  }, [scene]);
+const handleControlStart = () => {
+if (controlsRef.current) {
+controlsRef.current.autoRotate = false;
+if (autoRotateTimeout.current) {
+clearTimeout(autoRotateTimeout.current);
+}
+}
+};
 
-  useEffect(() => {
-    if (controlsRef.current) {
-      controlsRef.current.zoomToCursor = true;
-    }
-  }, []);
+const handleControlEnd = () => {
+if (autoRotateTimeout.current) {
+clearTimeout(autoRotateTimeout.current);
+}
+autoRotateTimeout.current = setTimeout(() => {
+if (controlsRef.current) {
+controlsRef.current.autoRotate = true;
+}
+}, 1000); // Wait 1 second before resuming auto-rotation
+};
 
-  return (
-    <>
-      <EffectComposer>
-        <Bloom luminanceThreshold={0.6} luminanceSmoothing={0.1} intensity={1.5} />
-      </EffectComposer>
-      {envMap && (
-        <Caustics
-          color="#ffffff"
-          lightSource={[5, 5, -10]}
-          worldRadius={0.5}
-          ior={1.1}
-          causticsOnly={false}
-          backside
-        >
-          <Model envMap={envMap} />
-        </Caustics>
-      )}
-      <OrbitControls ref={controlsRef} enableDamping dampingFactor={0.1} />
-    </>
-  );
+useEffect(() => {
+}, [gl, camera]);
+
+useEffect(() => {
+// Load main environment HDR
+new RGBELoader().load(
+'https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/1k/studio_small_08_1k.hdr',
+ (hdrTexture) => {
+hdrTexture.mapping = THREE.EquirectangularReflectionMapping;
+
+// Simple performance optimizations (safe)
+hdrTexture.generateMipmaps = false;
+hdrTexture.minFilter = THREE.LinearFilter;
+hdrTexture.magFilter = THREE.LinearFilter;
+
+// Main HDR exposure control
+const mainHdrExposure = 1.0;
+scene.environment = hdrTexture;
+scene.environmentIntensity = mainHdrExposure;
+scene.background = new THREE.Color('white');
+setEnvMap(hdrTexture);
+ }
+ );
+
+// Load diamond-specific HDR
+new RGBELoader().load(
+'https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/1k/photo_studio_01_1k.hdr',
+ (diamondHdr) => {
+diamondHdr.mapping = THREE.EquirectangularReflectionMapping;
+
+// Simple performance optimizations (safe)
+diamondHdr.generateMipmaps = false;
+diamondHdr.minFilter = THREE.LinearFilter;
+diamondHdr.magFilter = THREE.LinearFilter;
+
+// Diamond HDR exposure control
+const diamondHdrExposure = 0.5;
+
+const adjustedDiamondHdr = diamondHdr.clone();
+adjustedDiamondHdr.needsUpdate = true;
+
+setDiamondEnvMap(adjustedDiamondHdr);
+ }
+ );
+ }, [scene]);
+
+return (
+<>
+<EffectComposer>
+  <Bloom luminanceThreshold={0.6} luminanceSmoothing={1} intensity={0.1} />
+</EffectComposer>
+
+{enableEffects && envMap ? (
+<Model envMap={envMap} diamondEnvMap={diamondEnvMap || undefined} />
+) : envMap ? (
+<Model envMap={envMap} diamondEnvMap={diamondEnvMap || undefined} />
+) : null}
+<OrbitControls
+ref={controlsRef}
+enableZoom={false}
+enablePan={false}
+enableRotate={true}
+maxPolarAngle={Math.PI / 2}
+minPolarAngle={Math.PI / 2}
+rotateSpeed={2.4}
+enableDamping={true}
+dampingFactor={0.08}
+autoRotate={true}
+autoRotateSpeed={5}
+onStart={handleControlStart}
+onEnd={handleControlEnd}
+/>
+</>
+ );
 }
 
 export default function App() {
-  return (
-    <Canvas
-      camera={{ position: [0, 2, 2], near: 0.01, fov: 45 }}
-      style={{ width: '100vw', height: '100vh' }}
-    >
-      <Suspense fallback={null}>
-        <Scene />
-      </Suspense>
-    </Canvas>
-  );
+const [fps, setFps] = useState(0);
+const [minFps, setMinFps] = useState(0);
+const frameCount = useRef(0);
+const lastTime = useRef(performance.now());
+const frameTimes = useRef<number[]>([]);
+
+useEffect(() => {
+const updateFPS = () => {
+frameCount.current++;
+const currentTime = performance.now();
+const frameTime = currentTime - lastTime.current;
+
+// Store frame times for the past second
+frameTimes.current.push(frameTime);
+if (frameTimes.current.length > 60) { // Keep roughly 60 frames
+frameTimes.current.shift();
+}
+
+const elapsed = currentTime - (frameTimes.current.length > 0 ? 
+currentTime - frameTimes.current.reduce((a, b) => a + b, 0) : lastTime.current);
+
+if (elapsed >= 1000) { // Update every second
+// Calculate average FPS
+const avgFps = Math.round((frameCount.current * 1000) / elapsed);
+setFps(avgFps);
+
+// Calculate minimum FPS (slowest frame)
+const slowestFrame = Math.max(...frameTimes.current);
+const minFpsValue = slowestFrame > 0 ? Math.round(1000 / slowestFrame) : 60;
+setMinFps(minFpsValue);
+
+frameCount.current = 0;
+lastTime.current = currentTime;
+frameTimes.current = [];
+}
+requestAnimationFrame(updateFPS);
+};
+updateFPS();
+}, []);
+
+return (
+<>
+{/* FPS Counter */}
+<div style={{
+position: 'absolute',
+top: '10px',
+left: '10px',
+background: 'rgba(0, 0, 0, 0.7)',
+color: 'white',
+padding: '5px 10px',
+borderRadius: '4px',
+fontFamily: 'monospace',
+fontSize: '14px',
+zIndex: 1000,
+pointerEvents: 'none'
+}}>
+FPS: {fps} | Min: {minFps}
+</div>
+
+<Canvas
+camera={{ position: [0, 0, 1], near: 0.01, fov: 45 }}
+style={{ width: '100vw', height: '100vh' }}
+dpr={window.devicePixelRatio}
+gl={{ 
+antialias: false, 
+alpha: false,
+powerPreference: "high-performance",
+precision: "lowp",
+stencil: false,
+depth: true,
+logarithmicDepthBuffer: false
+}}
+frameloop="demand"
+
+>
+<Suspense fallback={null}>
+<Scene />
+</Suspense>
+</Canvas>
+</>
+ );
 }
