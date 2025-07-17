@@ -22,7 +22,7 @@ GLTFLoader,
  }
  );
 const groupRef = useRef<THREE.Group>(null!);
-const scale = 5; // Scale control metric
+const scale = 8; // Scale control metric
 const enableEffects = true; // True/False switch - set to false to show original GLB
 
 useEffect(() => {
@@ -184,65 +184,7 @@ onEnd={handleControlEnd}
 }
 
 export default function App() {
-const [fps, setFps] = useState(0);
-const [minFps, setMinFps] = useState(0);
-const frameCount = useRef(0);
-const lastTime = useRef(performance.now());
-const frameTimes = useRef<number[]>([]);
-
-useEffect(() => {
-const updateFPS = () => {
-frameCount.current++;
-const currentTime = performance.now();
-const frameTime = currentTime - lastTime.current;
-
-// Store frame times for the past second
-frameTimes.current.push(frameTime);
-if (frameTimes.current.length > 60) { // Keep roughly 60 frames
-frameTimes.current.shift();
-}
-
-const elapsed = currentTime - (frameTimes.current.length > 0 ? 
-currentTime - frameTimes.current.reduce((a, b) => a + b, 0) : lastTime.current);
-
-if (elapsed >= 1000) { // Update every second
-// Calculate average FPS
-const avgFps = Math.round((frameCount.current * 1000) / elapsed);
-setFps(avgFps);
-
-// Calculate minimum FPS (slowest frame)
-const slowestFrame = Math.max(...frameTimes.current);
-const minFpsValue = slowestFrame > 0 ? Math.round(1000 / slowestFrame) : 60;
-setMinFps(minFpsValue);
-
-frameCount.current = 0;
-lastTime.current = currentTime;
-frameTimes.current = [];
-}
-requestAnimationFrame(updateFPS);
-};
-updateFPS();
-}, []);
-
 return (
-<>
-{/* FPS Counter */}
-<div style={{
-position: 'absolute',
-top: '10px',
-left: '10px',
-background: 'rgba(0, 0, 0, 0.7)',
-color: 'white',
-padding: '5px 10px',
-borderRadius: '4px',
-fontFamily: 'monospace',
-fontSize: '14px',
-zIndex: 1000,
-pointerEvents: 'none'
-}}>
-FPS: {fps} | Min: {minFps}
-</div>
-
 <Canvas
 camera={{ position: [0, 0, 1], near: 0.01, fov: 45 }}
 style={{ width: '100vw', height: '100vh' }}
@@ -263,6 +205,5 @@ frameloop="demand"
 <Scene />
 </Suspense>
 </Canvas>
-</>
  );
 }
