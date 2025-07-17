@@ -14,7 +14,7 @@ import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js';
 function Model({ envMap }: { envMap: THREE.Texture }) {
   const dracoLoader = new DRACOLoader();
   dracoLoader.setDecoderPath('https://www.gstatic.com/draco/v1/decoders/');
-
+  
   const gltf = useLoader(
     GLTFLoader,
     'https://cdn.shopify.com/3d/models/84099c96618f39d1/compression_silver_diamond.glb',
@@ -27,6 +27,7 @@ function Model({ envMap }: { envMap: THREE.Texture }) {
 
   useEffect(() => {
     if (!groupRef.current) return;
+
     const box = new THREE.Box3().setFromObject(groupRef.current);
     const size = new THREE.Vector3();
     box.getSize(size);
@@ -35,6 +36,7 @@ function Model({ envMap }: { envMap: THREE.Texture }) {
 
     const heightOffset = box.min.y * scale;
     groupRef.current.position.y -= heightOffset;
+
     console.log('✅ Draco model scaled and aligned');
   }, []);
 
@@ -44,6 +46,7 @@ function Model({ envMap }: { envMap: THREE.Texture }) {
         if (child.isMesh) {
           const mesh = child as THREE.Mesh;
           const isDiamond = mesh.name === 'Round';
+
           return (
             <mesh
               key={mesh.name + index}
@@ -87,7 +90,8 @@ function Scene() {
       (hdrTexture) => {
         hdrTexture.mapping = THREE.EquirectangularReflectionMapping;
         scene.environment = hdrTexture;
-        scene.background = hdrTexture;
+        // Set white background instead of HDR texture
+        scene.background = new THREE.Color(0xffffff);
         setEnvMap(hdrTexture);
       }
     );
@@ -104,7 +108,6 @@ function Scene() {
       <EffectComposer>
         <Bloom luminanceThreshold={0.6} luminanceSmoothing={0.1} intensity={1.5} />
       </EffectComposer>
-
       {envMap && (
         <Caustics
           color="#ffffff"
@@ -117,7 +120,6 @@ function Scene() {
           <Model envMap={envMap} />
         </Caustics>
       )}
-
       <OrbitControls ref={controlsRef} enableDamping dampingFactor={0.1} />
     </>
   );
