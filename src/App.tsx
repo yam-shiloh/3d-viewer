@@ -22,7 +22,7 @@ GLTFLoader,
  }
  );
 const groupRef = useRef<THREE.Group>(null!);
-const scale = 10; // Scale control metric
+const scale = 15; // Scale control metric
 const enableEffects = true; // True/False switch - set to false to show original GLB
 
 useEffect(() => {
