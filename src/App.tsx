@@ -19,7 +19,7 @@ function Model() {
       if ((obj as Mesh).isMesh) {
         const mesh = obj as Mesh;
         mesh.material = new MeshStandardMaterial({
-          color: new THREE.Color('#ffdc70'),
+          color: new THREE.Color('#ffffff'),
           metalness: 1,
           roughness: 0,
           envMap,
