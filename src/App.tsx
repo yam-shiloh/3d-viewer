@@ -1,13 +1,23 @@
 import * as THREE from 'three';
-import { Suspense, useEffect, useRef } from 'react';
+import { Suspense, useEffect, useRef, useState, useMemo } from 'react';
 import { Canvas, useThree } from '@react-three/fiber';
 import { OrbitControls, useGLTF, Environment } from '@react-three/drei';
 import { Mesh, MeshStandardMaterial } from 'three';
 
-useGLTF.preload('https://cdn.shopify.com/3d/models/9ada044d09b88568/the_new_silver_heart.glb');
+// Preload default models to speed up switching
+useGLTF.preload('https://cdn.shopify.com/3d/models/6bce9a7ae62786dd/new_gold_heart_for_website.glb');
+useGLTF.preload('https://cdn.shopify.com/3d/models/e09fccbf08734217/very_small_silver_diamond.glb');
 
-function Model() {
-  const { scene } = useGLTF('https://cdn.shopify.com/3d/models/9ada044d09b88568/the_new_silver_heart.glb');
+// Map style keys to GLB URLs
+const MODEL_URLS: Record<string, string> = {
+  loving: 'https://cdn.shopify.com/3d/models/6bce9a7ae62786dd/new_gold_heart_for_website.glb',
+  minimal: 'https://cdn.shopify.com/3d/models/e09fccbf08734217/very_small_silver_diamond.glb',
+  special: 'https://cdn.shopify.com/3d/models/6bce9a7ae62786dd/new_gold_heart_for_website.glb', // Same as loving for now
+};
+
+// 3D model component
+function Model({ url }: { url: string }) {
+  const { scene } = useGLTF(url);
   const ref = useRef<THREE.Group>(null);
   const { scene: r3fScene } = useThree();
 
@@ -30,12 +40,32 @@ function Model() {
         mesh.receiveShadow = true;
       }
     });
-  }, [r3fScene.environment]);
+  }, [r3fScene.environment, scene]);
 
   return <primitive ref={ref} object={scene} scale={50} position={[0, -0.5, 0]} />;
 }
 
 export default function App() {
+  const [modelType, setModelType] = useState<'loving' | 'minimal' | 'special'>('loving');
+
+  // Handle messages from Shopify page
+  useEffect(() => {
+    function handleMessage(event: MessageEvent) {
+      if (event?.data?.type === 'changeModel') {
+        const newType = event.data.modelType;
+        if (MODEL_URLS[newType]) {
+          console.log(`🔄 Switching to model type: ${newType}`);
+          setModelType(newType);
+        }
+      }
+    }
+
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, []);
+
+  const currentModelUrl = useMemo(() => MODEL_URLS[modelType], [modelType]);
+
   return (
     <div
       style={{
@@ -71,7 +101,7 @@ export default function App() {
               files="https://cdn.shopify.com/s/files/1/0754/1676/4731/files/custom5.hdr?v=1752937460"
               background={false}
             />
-            <Model />
+            <Model url={currentModelUrl} />
             <OrbitControls
               enableZoom
               enablePan={false}
