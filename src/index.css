@@ -1,9 +1,6 @@
-body, html, #root {
+html, body, #root {
   margin: 0;
- padding: 0;
- height: 100%;
- width: 100%;
- background-color: white;
- overflow: hidden;
- position: relative;
- }
+  padding: 0;
+  height: 100%;
+  background-color: transparent;
+}
