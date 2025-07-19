@@ -12,14 +12,14 @@ import { Mesh } from 'three';
 import { EffectComposer, Bloom } from '@react-three/postprocessing';
 
 // Preload models
-useGLTF.preload('https://cdn.shopify.com/3d/models/6bce9a7ae62786dd/new_gold_heart_for_website.glb');
+useGLTF.preload('https://cdn.shopify.com/3d/models/f24085e9b7d9b801/new_silver_diamond.glb');
 useGLTF.preload('https://cdn.shopify.com/3d/models/f24085e9b7d9b801/new_silver_diamond.glb');
 
 const MODEL_SETTINGS = {
   loving: {
-    url: 'https://cdn.shopify.com/3d/models/6bce9a7ae62786dd/new_gold_heart_for_website.glb',
-    bloomIntensity: 0,
-    roughness: 0.2,
+    url: 'https://cdn.shopify.com/3d/models/f24085e9b7d9b801/new_silver_diamond.glb',
+    bloomIntensity: 0.3,
+    roughness: 0.1,
   },
   minimal: {
     url: 'https://cdn.shopify.com/3d/models/f24085e9b7d9b801/new_silver_diamond.glb',
