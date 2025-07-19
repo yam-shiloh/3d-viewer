@@ -1,0 +1,10 @@
+diff --git a/node_modules/@react-three/postprocessing/dist/effects/N8AO.d.ts b/node_modules/@react-three/postprocessing/dist/effects/N8AO.d.ts
+index 6aabe5f..89fa9e1 100644
+--- a/node_modules/@react-three/postprocessing/dist/effects/N8AO.d.ts
++++ b/node_modules/@react-three/postprocessing/dist/effects/N8AO.d.ts
+@@ -14,4 +14,4 @@ export type N8AOProps = {
+     screenSpaceRadius?: boolean;
+     renderMode?: 0 | 1 | 2 | 3 | 4;
+ };
+-export declare const N8AO: import("react").ForwardRefExoticComponent<N8AOProps & import("react").RefAttributes<N8AOPostPass>>;
++export declare const N8AO: import("react").ForwardRefExoticComponent<N8AOProps & import("react").RefAttributes<any>>;
