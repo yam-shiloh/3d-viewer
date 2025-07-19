@@ -37,30 +37,52 @@ function Model() {
 
 export default function App() {
   return (
-    <div style={{ width: '100vw', height: '100vh' }}>
-      <Canvas
-        shadows
-        camera={{ position: [0, 0, 3], fov: 30 }}
-        gl={{ alpha: true }}
-        style={{ background: 'transparent' }}
+    <div
+      style={{
+        width: '100vw',
+        height: '100vh',
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        background: 'transparent',
+      }}
+    >
+      <div
+        style={{
+          width: '50vw',
+          height: '100vh',
+          WebkitMaskImage: 'linear-gradient(to bottom, rgba(0,0,0,0) 0%, black 15%)',
+          maskImage: 'linear-gradient(to bottom, rgba(0,0,0,0) 0%, black 15%)',
+          WebkitMaskRepeat: 'no-repeat',
+          maskRepeat: 'no-repeat',
+          WebkitMaskSize: '100% 100%',
+          maskSize: '100% 100%',
+        }}
       >
-        <ambientLight intensity={0.15} />
-        <Suspense fallback={null}>
-          <Environment
-            files="https://cdn.shopify.com/s/files/1/0754/1676/4731/files/custom5.hdr?v=1752937460"
-            background={false}
-          />
-          <Model />
-          <OrbitControls
-            enableZoom
-            enablePan={false}
-            minPolarAngle={Math.PI / 2}
-            maxPolarAngle={Math.PI / 2}
-            autoRotate
-            autoRotateSpeed={0.05}
-          />
-        </Suspense>
-      </Canvas>
+        <Canvas
+          dpr={Math.max(2, window.devicePixelRatio)}
+          camera={{ position: [0, 0, 5], fov: 30 }}
+          gl={{ alpha: true }}
+          style={{ background: 'transparent' }}
+        >
+          <ambientLight intensity={0} />
+          <Suspense fallback={null}>
+            <Environment
+              files="https://cdn.shopify.com/s/files/1/0754/1676/4731/files/custom5.hdr?v=1752937460"
+              background={false}
+            />
+            <Model />
+            <OrbitControls
+              enableZoom
+              enablePan={false}
+              minPolarAngle={Math.PI / 2}
+              maxPolarAngle={Math.PI / 2}
+              autoRotate
+              autoRotateSpeed={0.05}
+            />
+          </Suspense>
+        </Canvas>
+      </div>
     </div>
   );
 }
