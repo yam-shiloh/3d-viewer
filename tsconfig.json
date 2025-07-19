@@ -10,7 +10,8 @@
     "isolatedModules": true,
     "noEmit": true,
     "strict": true,
-    "types": ["react", "react-dom"]
+    "types": ["react", "react-dom"],
+    "typeRoots": ["./node_modules/@types", "./src/types"]
   },
   "include": ["src"]
 }
