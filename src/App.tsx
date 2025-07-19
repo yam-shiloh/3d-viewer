@@ -21,7 +21,7 @@ function Model() {
         mesh.material = new MeshStandardMaterial({
           color: new THREE.Color('#ffffff'),
           metalness: 1,
-          roughness: 0,
+          roughness: 0.2,
           envMap,
           envMapIntensity: 0.5,
           side: THREE.DoubleSide,
