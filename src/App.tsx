@@ -1,8 +1,8 @@
 import * as THREE from 'three';
-import { Suspense, useEffect, useMemo, useState } from 'react';
+import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { Canvas, useThree, useLoader } from '@react-three/fiber';
 import {
-  OrbitControls,
+  OrbitControls as DreiOrbitControls,
   useGLTF,
   Environment,
   MeshRefractionMaterial,
@@ -12,13 +12,13 @@ import { Mesh } from 'three';
 import { EffectComposer, Bloom } from '@react-three/postprocessing';
 
 // Preload models
-useGLTF.preload('https://cdn.shopify.com/3d/models/f24085e9b7d9b801/new_silver_diamond.glb');
+useGLTF.preload('https://cdn.shopify.com/3d/models/6bce9a7ae62786dd/new_gold_heart_for_website.glb');
 useGLTF.preload('https://cdn.shopify.com/3d/models/f24085e9b7d9b801/new_silver_diamond.glb');
 
 const MODEL_SETTINGS = {
   loving: {
-    url: 'https://cdn.shopify.com/3d/models/f24085e9b7d9b801/new_silver_diamond.glb',
-    bloomIntensity: 0.3,
+    url: 'https://cdn.shopify.com/3d/models/6bce9a7ae62786dd/new_gold_heart_for_website.glb',
+    bloomIntensity: 0,
     roughness: 0.1,
   },
   minimal: {
@@ -102,7 +102,7 @@ function Model({
               metalness={1}
               roughness={roughness}
               envMap={r3fScene.environment!}
-              envMapIntensity={0.5}
+              envMapIntensity={1}
               side={THREE.DoubleSide}
             />
           </mesh>
@@ -122,6 +122,58 @@ function CameraLayers() {
   }, [camera]);
   return null;
 }
+
+function SmartOrbitControls() {
+  const controlsRef = useRef<any>(null);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const { gl, camera } = useThree();
+  const domElement = gl.domElement;
+  
+
+  useEffect(() => {
+    const controls = controlsRef.current;
+    if (!controls) return;
+
+    // ✅ Zoom to cursor behavior (only available in newer versions of drei)
+    controls.zoomToCursor = true;
+
+    const handleStart = () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+        timeoutRef.current = null;
+      }
+      controls.autoRotate = false;
+    };
+
+    const handleEnd = () => {
+      timeoutRef.current = setTimeout(() => {
+        controls.autoRotate = true;
+      }, 1000); // 1 second delay
+    };
+
+    controls.addEventListener('start', handleStart);
+    controls.addEventListener('end', handleEnd);
+
+    return () => {
+      controls.removeEventListener('start', handleStart);
+      controls.removeEventListener('end', handleEnd);
+    };
+  }, []);
+
+  return (
+    <DreiOrbitControls
+      ref={controlsRef}
+      enableZoom={false}
+      enablePan={false}
+      minPolarAngle={Math.PI / 2}
+      maxPolarAngle={Math.PI / 2}
+      autoRotate
+      autoRotateSpeed={2}
+      makeDefault
+    />
+  );
+}
+
 
 export default function App() {
   const [modelType, setModelType] = useState<ModelType>('loving');
@@ -184,14 +236,7 @@ export default function App() {
               background={false}
             />
             <Model url={url} roughness={roughness} />
-            <OrbitControls
-              enableZoom
-              enablePan={false}
-              minPolarAngle={Math.PI / 2}
-              maxPolarAngle={Math.PI / 2}
-              autoRotate
-              autoRotateSpeed={0}
-            />
+            <SmartOrbitControls />
             <EffectComposer>
               <Bloom
                 intensity={bloomIntensity}
