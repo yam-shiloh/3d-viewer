@@ -9,7 +9,6 @@ import {
 } from '@react-three/drei';
 import { RGBELoader } from 'three-stdlib';
 import { Mesh } from 'three';
-import { EffectComposer, Bloom } from '@react-three/postprocessing';
 
 // Preload models
 useGLTF.preload('https://cdn.shopify.com/3d/models/6bce9a7ae62786dd/new_gold_heart_for_website.glb');
@@ -18,17 +17,14 @@ useGLTF.preload('https://cdn.shopify.com/3d/models/f24085e9b7d9b801/new_silver_d
 const MODEL_SETTINGS = {
   loving: {
     url: 'https://cdn.shopify.com/3d/models/6bce9a7ae62786dd/new_gold_heart_for_website.glb',
-    bloomIntensity: 0,
     roughness: 0.1,
   },
   minimal: {
     url: 'https://cdn.shopify.com/3d/models/f24085e9b7d9b801/new_silver_diamond.glb',
-    bloomIntensity: 0.3,
     roughness: 0.1,
   },
   special: {
     url: 'https://cdn.shopify.com/3d/models/6bce9a7ae62786dd/new_gold_heart_for_website.glb',
-    bloomIntensity: 0.3,
     roughness: 0.1,
   },
 } as const;
@@ -72,7 +68,6 @@ function Model({
             scale={mesh.scale}
             castShadow
             receiveShadow
-            onUpdate={(self) => self.layers.set(1)} // Bloom layer
           >
             <MeshRefractionMaterial
               envMap={royalHDR}
@@ -114,27 +109,16 @@ function Model({
   return <group scale={50} position={[0, -0.5, 0]}>{meshes}</group>;
 }
 
-function CameraLayers() {
-  const { camera } = useThree();
-  useEffect(() => {
-    camera.layers.enable(0);
-    camera.layers.enable(1);
-  }, [camera]);
-  return null;
-}
-
 function SmartOrbitControls() {
   const controlsRef = useRef<any>(null);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { gl, camera } = useThree();
   const domElement = gl.domElement;
-  
 
   useEffect(() => {
     const controls = controlsRef.current;
     if (!controls) return;
 
-    // ✅ Zoom to cursor behavior (only available in newer versions of drei)
     controls.zoomToCursor = true;
 
     const handleStart = () => {
@@ -148,7 +132,7 @@ function SmartOrbitControls() {
     const handleEnd = () => {
       timeoutRef.current = setTimeout(() => {
         controls.autoRotate = true;
-      }, 1000); // 1 second delay
+      }, 1000);
     };
 
     controls.addEventListener('start', handleStart);
@@ -174,7 +158,6 @@ function SmartOrbitControls() {
   );
 }
 
-
 export default function App() {
   const [modelType, setModelType] = useState<ModelType>('loving');
 
@@ -193,10 +176,7 @@ export default function App() {
     return () => window.removeEventListener('message', handleMessage);
   }, []);
 
-  const { url, bloomIntensity, roughness } = useMemo(
-    () => MODEL_SETTINGS[modelType],
-    [modelType]
-  );
+  const { url, roughness } = useMemo(() => MODEL_SETTINGS[modelType], [modelType]);
 
   return (
     <div
@@ -230,22 +210,12 @@ export default function App() {
           <color attach="background" args={['white']} />
           <ambientLight intensity={0} />
           <Suspense fallback={null}>
-            <CameraLayers />
             <Environment
               files="https://cdn.shopify.com/s/files/1/0754/1676/4731/files/custom5.hdr?v=1752937460"
               background={false}
             />
             <Model url={url} roughness={roughness} />
             <SmartOrbitControls />
-            <EffectComposer>
-              <Bloom
-                intensity={bloomIntensity}
-                luminanceThreshold={1}
-                luminanceSmoothing={1}
-                mipmapBlur
-                renderIndex={1}
-              />
-            </EffectComposer>
           </Suspense>
         </Canvas>
       </div>
