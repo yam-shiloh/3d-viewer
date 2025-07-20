@@ -34,9 +34,11 @@ type ModelType = keyof typeof MODEL_SETTINGS;
 function Model({
   url,
   roughness,
+  metalColor,
 }: {
   url: string;
   roughness: number;
+  metalColor: string;
 }) {
   const { scene } = useGLTF(url);
   const royalHDR = useLoader(
@@ -93,7 +95,7 @@ function Model({
             receiveShadow
           >
             <meshStandardMaterial
-              color="#ffffff"
+              color={metalColor}
               metalness={1}
               roughness={roughness}
               envMap={r3fScene.environment!}
@@ -112,7 +114,7 @@ function Model({
 function SmartOrbitControls() {
   const controlsRef = useRef<any>(null);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const { gl, camera } = useThree();
+  const { gl } = useThree();
   const domElement = gl.domElement;
 
   useEffect(() => {
@@ -160,14 +162,32 @@ function SmartOrbitControls() {
 
 export default function App() {
   const [modelType, setModelType] = useState<ModelType>('loving');
+  const [metalColor, setMetalColor] = useState('#ffdc70'); // default to gold
 
   useEffect(() => {
+    // Sync from window.selectedMaterial if already set
+    if (typeof window !== 'undefined' && 'selectedMaterial' in window) {
+      if (window.selectedMaterial === 'silver') {
+        setMetalColor('#ffffff');
+      } else if (window.selectedMaterial === 'gold') {
+        setMetalColor('#ffdc70');
+      }
+    }
+
     function handleMessage(event: MessageEvent) {
       if (event?.data?.type === 'changeModel') {
         const newType = event.data.modelType;
         if (MODEL_SETTINGS[newType as ModelType]) {
-          console.log(`🔄 Switching to model type: ${newType}`);
           setModelType(newType);
+        }
+      }
+
+      if (event?.data?.type === 'materialChange') {
+        const material = event.data.material;
+        if (material === 'gold') {
+          setMetalColor('#ffdc70');
+        } else if (material === 'silver') {
+          setMetalColor('#ffffff');
         }
       }
     }
@@ -214,7 +234,7 @@ export default function App() {
               files="https://cdn.shopify.com/s/files/1/0754/1676/4731/files/custom5.hdr?v=1752937460"
               background={false}
             />
-            <Model url={url} roughness={roughness} />
+            <Model url={url} roughness={roughness} metalColor={metalColor} />
             <SmartOrbitControls />
           </Suspense>
         </Canvas>
