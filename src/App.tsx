@@ -161,8 +161,8 @@ function SmartOrbitControls() {
 }
 
 export default function App() {
-  const [modelType, setModelType] = useState<ModelType>('loving');
-  const [metalColor, setMetalColor] = useState('#ffdc70'); // default to gold
+  const [modelType, setModelType] = useState<ModelType>('minimal');
+  const [metalColor, setMetalColor] = useState('#ffffff'); // default to silver
 
   useEffect(() => {
     // Sync from window.selectedMaterial if already set
