@@ -17,42 +17,101 @@ useGLTF.preload('https://cdn.shopify.com/3d/models/f24085e9b7d9b801/new_silver_d
 const MODEL_SETTINGS = {
   loving: {
     url: 'https://cdn.shopify.com/3d/models/6bce9a7ae62786dd/new_gold_heart_for_website.glb',
-    roughness: 0.1,
   },
   minimal: {
     url: 'https://cdn.shopify.com/3d/models/f24085e9b7d9b801/new_silver_diamond.glb',
-    roughness: 0.1,
   },
   special: {
     url: 'https://cdn.shopify.com/3d/models/6bce9a7ae62786dd/new_gold_heart_for_website.glb',
+  },
+} as const;
+
+// Metal material settings - easily adjustable
+const METAL_SETTINGS = {
+  '14k-gold-plating': {
+    color: '#F8E685',
+    roughness: 0.25,
+  },
+  '18k-gold-plating': {
+    color: '#FFC328',
+    roughness: 0.15,
+  },
+  '18k-solid-gold': {
+    color: '#FFB800',
+    roughness: 0.05,
+  },
+  '925-silver': {
+    color: '#c0c0c0',
+    roughness: 0.2,
+  },
+  'stainless-steel': {
+    color: '#c0c0c0',
+    roughness: 0.3,
+  },
+  '18k-white-gold': {
+    color: '#ffffff',
     roughness: 0.1,
   },
 } as const;
 
+// Diamond material settings with different HDR URLs
+const DIAMOND_SETTINGS = {
+  'real-diamond': {
+    bounces: 2,
+    ior: 2.4,
+    fresnel: 0,
+    aberrationStrength: 0,
+    color: '#ffffff',
+    fastChroma: true,
+    toneMapped: false,
+    hdrUrl: 'https://cdn.shopify.com/s/files/1/0754/1676/4731/files/custom5.hdr?v=1752937460',
+  },
+  'demi-diamond': {
+    bounces: 2,
+    ior: 2.4,
+    fresnel: 0,
+    aberrationStrength: 0,
+    color: '#ffffff',
+    fastChroma: true,
+    toneMapped: false,
+    hdrUrl: 'https://cdn.shopify.com/s/files/1/0754/1676/4731/files/brown_photostudio_04_1k.hdr?v=1753809331',
+  },
+} as const;
+
 type ModelType = keyof typeof MODEL_SETTINGS;
+type MetalType = keyof typeof METAL_SETTINGS;
+type DiamondType = keyof typeof DIAMOND_SETTINGS;
 
 function Model({
   url,
-  roughness,
-  metalColor,
+  metalType,
+  diamondType,
 }: {
   url: string;
-  roughness: number;
-  metalColor: string;
+  metalType: MetalType;
+  diamondType: DiamondType;
 }) {
   const { scene } = useGLTF(url);
-  const royalHDR = useLoader(
+  const { scene: r3fScene } = useThree();
+  const cloned = useMemo(() => scene.clone(true), [scene]);
+  
+  const { color: metalColor, roughness } = METAL_SETTINGS[metalType];
+  const diamondSettings = DIAMOND_SETTINGS[diamondType];
+
+  // Load the HDR specific to the diamond type
+  const diamondHDR = useLoader(RGBELoader, diamondSettings.hdrUrl);
+  
+  // Also load the environment HDR (using the real diamond HDR for environment)
+  const environmentHDR = useLoader(
     RGBELoader,
     'https://cdn.shopify.com/s/files/1/0754/1676/4731/files/custom5.hdr?v=1752937460'
   );
-  const { scene: r3fScene } = useThree();
-  const cloned = useMemo(() => scene.clone(true), [scene]);
 
   const meshes: React.ReactElement[] = [];
 
   useEffect(() => {
-    r3fScene.environment = royalHDR;
-  }, [royalHDR, r3fScene]);
+    r3fScene.environment = environmentHDR;
+  }, [environmentHDR, r3fScene]);
 
   cloned.traverse((obj) => {
     if ((obj as Mesh).isMesh) {
@@ -72,14 +131,14 @@ function Model({
             receiveShadow
           >
             <MeshRefractionMaterial
-              envMap={royalHDR}
-              bounces={2}
-              ior={2.4}
-              fresnel={0}
-              aberrationStrength={0}
-              color="#ffffff"
-              fastChroma
-              toneMapped={false}
+              envMap={diamondHDR}
+              bounces={diamondSettings.bounces}
+              ior={diamondSettings.ior}
+              fresnel={diamondSettings.fresnel}
+              aberrationStrength={diamondSettings.aberrationStrength}
+              color={diamondSettings.color}
+              fastChroma={diamondSettings.fastChroma}
+              toneMapped={diamondSettings.toneMapped}
             />
           </mesh>
         );
@@ -162,15 +221,16 @@ function SmartOrbitControls() {
 
 export default function App() {
   const [modelType, setModelType] = useState<ModelType>('minimal');
-  const [metalColor, setMetalColor] = useState('#ffffff'); // default to silver
+  const [metalType, setMetalType] = useState<MetalType>('18k-white-gold');
+  const [diamondType, setDiamondType] = useState<DiamondType>('real-diamond'); // Default to real diamond
 
   useEffect(() => {
-    // Sync from window.selectedMaterial if already set
+    // Sync from window.selectedMaterial if already set (backward compatibility)
     if (typeof window !== 'undefined' && 'selectedMaterial' in window) {
       if (window.selectedMaterial === 'silver') {
-        setMetalColor('#ffffff');
+        setMetalType('925-silver');
       } else if (window.selectedMaterial === 'gold') {
-        setMetalColor('#ffdc70');
+        setMetalType('18k-solid-gold');
       }
     }
 
@@ -182,12 +242,19 @@ export default function App() {
         }
       }
 
+      // Handle metal material changes
       if (event?.data?.type === 'materialChange') {
         const material = event.data.material;
-        if (material === 'gold') {
-          setMetalColor('#ffdc70');
-        } else if (material === 'silver') {
-          setMetalColor('#ffffff');
+        if (METAL_SETTINGS[material as MetalType]) {
+          setMetalType(material as MetalType);
+        }
+      }
+
+      // Handle diamond type changes
+      if (event?.data?.type === 'diamondChange') {
+        const diamond = event.data.diamond;
+        if (DIAMOND_SETTINGS[diamond as DiamondType]) {
+          setDiamondType(diamond as DiamondType);
         }
       }
     }
@@ -196,7 +263,7 @@ export default function App() {
     return () => window.removeEventListener('message', handleMessage);
   }, []);
 
-  const { url, roughness } = useMemo(() => MODEL_SETTINGS[modelType], [modelType]);
+  const { url } = useMemo(() => MODEL_SETTINGS[modelType], [modelType]);
 
   return (
     <div
@@ -234,7 +301,7 @@ export default function App() {
               files="https://cdn.shopify.com/s/files/1/0754/1676/4731/files/custom5.hdr?v=1752937460"
               background={false}
             />
-            <Model url={url} roughness={roughness} metalColor={metalColor} />
+            <Model url={url} metalType={metalType} diamondType={diamondType} />
             <SmartOrbitControls />
           </Suspense>
         </Canvas>
