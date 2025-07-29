@@ -134,7 +134,7 @@ function SmartOrbitControls() {
     const handleEnd = () => {
       timeoutRef.current = setTimeout(() => {
         controls.autoRotate = true;
-      }, 1000);
+      }, 5000);
     };
 
     controls.addEventListener('start', handleStart);
