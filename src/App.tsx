@@ -167,7 +167,7 @@ function Model({
     }
   });
 
-  return <group scale={50} position={[0, -1.2, 0]}>{meshes}</group>;
+  return <group scale={50} position={[0, -0.3, 0]}>{meshes}</group>;
 }
 
 function SmartOrbitControls() {
@@ -290,7 +290,7 @@ export default function App() {
       >
         <Canvas
           dpr={Math.max(2, window.devicePixelRatio)}
-          camera={{ position: [0, 0, 5], fov: 30 }}
+          camera={{ position: [0, 0, 4], fov: 30 }}
           gl={{ alpha: true }}
           style={{ background: 'transparent' }}
         >
