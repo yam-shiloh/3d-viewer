@@ -12,14 +12,14 @@ import { Mesh } from 'three';
 
 // Preload models
 useGLTF.preload('https://cdn.shopify.com/3d/models/6bce9a7ae62786dd/new_gold_heart_for_website.glb');
-useGLTF.preload('https://cdn.shopify.com/3d/models/f24085e9b7d9b801/new_silver_diamond.glb');
+useGLTF.preload('https://cdn.shopify.com/3d/models/9605aacd6a95fba4/smaller_diamond_for_website.glb');
 
 const MODEL_SETTINGS = {
   loving: {
     url: 'https://cdn.shopify.com/3d/models/6bce9a7ae62786dd/new_gold_heart_for_website.glb',
   },
   minimal: {
-    url: 'https://cdn.shopify.com/3d/models/f24085e9b7d9b801/new_silver_diamond.glb',
+    url: 'https://cdn.shopify.com/3d/models/9605aacd6a95fba4/smaller_diamond_for_website.glb',
   },
   special: {
     url: 'https://cdn.shopify.com/3d/models/6bce9a7ae62786dd/new_gold_heart_for_website.glb',
@@ -49,7 +49,7 @@ const METAL_SETTINGS = {
     roughness: 0.3,
   },
   '18k-white-gold': {
-    color: '#ffffff',
+    color: '#FFCF00',
     roughness: 0.1,
   },
 } as const;
