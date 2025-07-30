@@ -86,12 +86,10 @@ function Model({
   url,
   metalType,
   diamondType,
-  cameraDistance,
 }: {
   url: string;
   metalType: MetalType;
   diamondType: DiamondType;
-  cameraDistance: number;
 }) {
   const { scene } = useGLTF(url);
   const { scene: r3fScene } = useThree();
@@ -169,19 +167,7 @@ function Model({
     }
   });
 
-  // Apply ease-in-out curve to the camera distance for smooth object positioning
-  const easeInOut = (t: number) => {
-    return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
-  };
-  
-  const easedDistance = easeInOut(cameraDistance);
-
-  // Interpolate object position based on eased camera distance
-  // When easedDistance is 0 (slider down): position [0, -0.5, 0]
-  // When easedDistance is 1 (slider up): position [0, 0, 0]
-  const objectY = -0.5 + (easedDistance * 0.5);
-
-  return <group scale={50} position={[0, objectY, 0]}>{meshes}</group>;
+  return <group scale={50} position={[0, -0.5, 0]}>{meshes}</group>;
 }
 
 function SmartOrbitControls() {
@@ -233,35 +219,10 @@ function SmartOrbitControls() {
   );
 }
 
-function DynamicCamera({ cameraDistance }: { cameraDistance: number }) {
-  const { camera } = useThree();
-  
-  useEffect(() => {
-    // Apply ease-in-out curve to the camera distance
-    const easeInOut = (t: number) => {
-      return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
-    };
-    
-    const easedDistance = easeInOut(cameraDistance);
-    
-    // Interpolate camera position based on eased slider value
-    // When easedDistance is 0 (slider down): position [0, 0, 5]
-    // When easedDistance is 1 (slider up): position [0, 0, 1.5]
-    const cameraZ = 5 - (easedDistance * 3.5);
-    
-    // Only update the Z position, preserve existing X and Y
-    camera.position.setZ(cameraZ);
-    camera.updateProjectionMatrix();
-  }, [cameraDistance, camera]);
-
-  return null;
-}
-
 export default function App() {
   const [modelType, setModelType] = useState<ModelType>('minimal');
   const [metalType, setMetalType] = useState<MetalType>('18k-white-gold');
-  const [diamondType, setDiamondType] = useState<DiamondType>('real-diamond');
-  const [cameraDistance, setCameraDistance] = useState<number>(0); // Default to slider down (far view)
+  const [diamondType, setDiamondType] = useState<DiamondType>('real-diamond'); // Default to real diamond
 
   useEffect(() => {
     // Sync from window.selectedMaterial if already set (backward compatibility)
@@ -313,7 +274,6 @@ export default function App() {
         justifyContent: 'center',
         alignItems: 'center',
         background: 'transparent',
-        position: 'relative',
       }}
     >
       <div
@@ -330,134 +290,21 @@ export default function App() {
       >
         <Canvas
           dpr={Math.max(2, window.devicePixelRatio)}
-          camera={{ position: [0, 0, 1.5], fov: 30 }}
+          camera={{ position: [0, 0, 5], fov: 30 }}
           gl={{ alpha: true }}
           style={{ background: 'transparent' }}
         >
           <color attach="background" args={['white']} />
           <ambientLight intensity={0} />
-          <DynamicCamera cameraDistance={cameraDistance} />
           <Suspense fallback={null}>
             <Environment
               files="https://cdn.shopify.com/s/files/1/0754/1676/4731/files/custom5.hdr?v=1752937460"
               background={false}
             />
-            <Model url={url} metalType={metalType} diamondType={diamondType} cameraDistance={cameraDistance} />
+            <Model url={url} metalType={metalType} diamondType={diamondType} />
             <SmartOrbitControls />
           </Suspense>
         </Canvas>
-      </div>
-      
-      {/* Camera Distance Slider */}
-      <div
-        style={{
-          position: 'absolute',
-          right: '20px',
-          top: '50%',
-          transform: 'translateY(-50%)',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          gap: '10px',
-          zIndex: 1000,
-        }}
-      >
-        {/* Zoom Icon */}
-        <div
-          style={{
-            width: '30px',
-            height: '30px',
-            flexShrink: 0,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 30 30" fill="none">
-            <path d="M26.25 26.25L20.8125 20.8125M13.75 10V17.5M10 13.75H17.5M23.75 13.75C23.75 19.2728 19.2728 23.75 13.75 23.75C8.22715 23.75 3.75 19.2728 3.75 13.75C3.75 8.22715 8.22715 3.75 13.75 3.75C19.2728 3.75 23.75 8.22715 23.75 13.75Z" stroke="#1E1E1E" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"/>
-          </svg>
-        </div>
-
-        {/* Custom Slider Container */}
-        <div
-          style={{
-            width: '68px',
-            height: '222px',
-            flexShrink: 0,
-            borderRadius: '33px',
-            background: '#FFF',
-            boxShadow: '0 4px 4px 0 rgba(0, 0, 0, 0.25)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            position: 'relative',
-            cursor: 'pointer',
-          }}
-          onClick={(e) => {
-            const rect = e.currentTarget.getBoundingClientRect();
-            const y = e.clientY - rect.top;
-            const trackHeight = 181;
-            const trackStart = (222 - trackHeight) / 2;
-            const relativeY = Math.max(0, Math.min(trackHeight, y - trackStart));
-            const newValue = 1 - (relativeY / trackHeight); // Inverted because top should be 1 (close)
-            setCameraDistance(newValue);
-          }}
-        >
-          {/* Slider Track */}
-          <div
-            style={{
-              width: '10px',
-              height: '181px',
-              flexShrink: 0,
-              borderRadius: '17px',
-              background: '#D9D9D9',
-              position: 'relative',
-              backfaceVisibility: 'hidden',
-              WebkitBackfaceVisibility: 'hidden',
-              transform: 'translateZ(0)',
-              WebkitTransform: 'translateZ(0)',
-            }}
-          >
-            {/* Slider Handle */}
-            <div
-              style={{
-                width: '22px',
-                height: '22px',
-                flexShrink: 0,
-                borderRadius: '50%',
-                background: '#FFF',
-                border: '0.5px solid #000',
-                position: 'absolute',
-                left: '50%',
-                transform: 'translateX(-50%)',
-                top: `${(1 - cameraDistance) * (181 - 22)}px`, // Inverted positioning
-                cursor: 'grab',
-                transition: 'top 0.1s ease-out',
-              }}
-              onMouseDown={(e) => {
-                e.preventDefault();
-                const startY = e.clientY;
-                const startValue = cameraDistance;
-                const trackHeight = 181 - 22;
-
-                const handleMouseMove = (e: MouseEvent) => {
-                  const deltaY = e.clientY - startY;
-                  const deltaValue = -deltaY / trackHeight; // Negative because moving up should increase value
-                  const newValue = Math.max(0, Math.min(1, startValue + deltaValue));
-                  setCameraDistance(newValue);
-                };
-
-                const handleMouseUp = () => {
-                  document.removeEventListener('mousemove', handleMouseMove);
-                  document.removeEventListener('mouseup', handleMouseUp);
-                };
-
-                document.addEventListener('mousemove', handleMouseMove);
-                document.addEventListener('mouseup', handleMouseUp);
-              }}
-            />
-          </div>
-        </div>
       </div>
     </div>
   );
