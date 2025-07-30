@@ -167,7 +167,7 @@ function Model({
     }
   });
 
-  return <group scale={50} position={[0, -0.5, 0]}>{meshes}</group>;
+  return <group scale={50} position={[0, -1.2, 0]}>{meshes}</group>;
 }
 
 function SmartOrbitControls() {
@@ -208,7 +208,7 @@ function SmartOrbitControls() {
   return (
     <DreiOrbitControls
       ref={controlsRef}
-      enableZoom={false}
+      enableZoom={true}
       enablePan={false}
       minPolarAngle={Math.PI / 2}
       maxPolarAngle={Math.PI / 2}
