@@ -37,8 +37,8 @@ const METAL_SETTINGS = {
     roughness: 0.15,
   },
   '18k-solid-gold': {
-    color: '#FFB800',
-    roughness: 0.05,
+    color: '#FFCF00',
+    roughness: 0.1,
   },
   '925-silver': {
     color: '#c0c0c0',
@@ -49,8 +49,8 @@ const METAL_SETTINGS = {
     roughness: 0.3,
   },
   '18k-white-gold': {
-    color: '#FFCF00',
-    roughness: 0.1,
+    color: '#ffffff',
+    roughness: 0.05,
   },
 } as const;
 
