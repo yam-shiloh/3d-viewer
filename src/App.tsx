@@ -88,13 +88,6 @@ function TextEngraver({
   isVisible 
 }: { 
   onTextureUpdate: (texture: THREE.Texture, depth: number) => void;
-  engravingEnabled: boolean;
-  text: string;
-  fontSize: number;
-  fontFamily: string;
-  engravingDepth: number;
-  positionX: number;
-  positionY: number;
   isVisible: boolean;
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -106,7 +99,47 @@ function TextEngraver({
   const [engravingDepth, setEngravingDepth] = useState(1.0); // 100%
   const [positionX, setPositionX] = useState(0.32); // -36% from center (0.5 - 0.18 = 0.32)
   const [positionY, setPositionY] = useState(0.5); // 0% = center
-  const [engravingEnabled, setEngravingEnabled] = useState(false); // Off by default
+
+  // Listen for iframe messages to change text
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      console.log('📨 Received iframe message:', event.data);
+      
+      // Handle text change commands
+      if (event.data?.type === 'changeEngravingText') {
+        const newText = event.data.text;
+        if (typeof newText === 'string') {
+          console.log('✏️ Updating engraved text to:', newText);
+          setText(newText);
+        }
+      }
+      
+      // Handle other potential commands
+      if (event.data?.type === 'getEngravingText') {
+        // Send current text back to parent
+        if (event.source && 'postMessage' in event.source) {
+          (event.source as Window).postMessage({
+            type: 'currentEngravingText',
+            text: text
+          }, event.origin);
+        }
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+    
+    // Send ready signal to parent window
+    if (window.parent !== window) {
+      window.parent.postMessage({
+        type: 'engravingReady',
+        message: 'Engraving system ready to receive commands'
+      }, '*');
+    }
+
+    return () => {
+      window.removeEventListener('message', handleMessage);
+    };
+  }, [text]);
 
   useEffect(() => {
     if (!isVisible) return;
@@ -245,18 +278,18 @@ function TextEngraver({
     setText(randomText);
   }, []);
 
-  // Auto-render when text or settings change (only if engraving is enabled)
+  // Auto-render when text or settings change
   useEffect(() => {
-    if (engravingEnabled && text.trim()) {
+    if (text.trim()) {
       renderText();
     } else {
       clearText();
     }
-  }, [text, fontSize, fontFamily, engravingDepth, positionX, positionY, engravingEnabled, renderText, clearText]);
+  }, [text, fontSize, fontFamily, engravingDepth, positionX, positionY, renderText, clearText]);
 
-  if (!isVisible || !engravingEnabled) return null;
+  if (!isVisible) return null;
 
-  // Render texture in background without showing UI
+  // Render texture in background - no UI, controlled via iframe messages
   return (
     <canvas
       ref={canvasRef}
@@ -459,15 +492,6 @@ export default function App() {
   const [paintTexture, setPaintTexture] = useState<THREE.Texture | undefined>();
   const [showPainter, setShowPainter] = useState(true); // Always on by default
   const [debugInfo, setDebugInfo] = useState('No texture yet');
-  
-  // Engraving state
-  const [text, setText] = useState('I love you Sarah,\nfrom now on I\'m always\nhere if you\'ll need me\n- [your name]');
-  const [fontSize, setFontSize] = useState(55);
-  const [fontFamily, setFontFamily] = useState('cursive');
-  const [engravingDepth, setEngravingDepth] = useState(1.0);
-  const [positionX, setPositionX] = useState(0.32);
-  const [positionY, setPositionY] = useState(0.5);
-  const [engravingEnabled, setEngravingEnabled] = useState(false); // Off by default
 
   useEffect(() => {
     if (typeof window !== 'undefined' && 'selectedMaterial' in window) {
@@ -535,13 +559,6 @@ export default function App() {
       <TextEngraver 
         onTextureUpdate={handleTextureUpdate}
         isVisible={showPainter}
-        engravingEnabled={engravingEnabled}
-        text={text}
-        fontSize={fontSize}
-        fontFamily={fontFamily}
-        engravingDepth={engravingDepth}
-        positionX={positionX}
-        positionY={positionY}
       />
 
       <div
