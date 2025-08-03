@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
+import { Suspense, useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import { Canvas, useThree, useLoader } from '@react-three/fiber';
 import {
   OrbitControls as DreiOrbitControls,
@@ -19,7 +19,7 @@ const MODEL_SETTINGS = {
     url: 'https://cdn.shopify.com/3d/models/6bce9a7ae62786dd/new_gold_heart_for_website.glb',
   },
   minimal: {
-    url: 'https://cdn.shopify.com/3d/models/c1ba46f8c661e88e/smaller_diamond_for_website.glb',
+    url: 'https://cdn.shopify.com/3d/models/133e8057a7d84b68/UV_heart_for_website.glb',
   },
   special: {
     url: 'https://cdn.shopify.com/3d/models/6bce9a7ae62786dd/new_gold_heart_for_website.glb',
@@ -82,14 +82,201 @@ type ModelType = keyof typeof MODEL_SETTINGS;
 type MetalType = keyof typeof METAL_SETTINGS;
 type DiamondType = keyof typeof DIAMOND_SETTINGS;
 
+// Text Engraving Component
+function TextEngraver({ 
+  onTextureUpdate, 
+  isVisible 
+}: { 
+  onTextureUpdate: (texture: THREE.Texture, depth: number) => void;
+  engravingEnabled: boolean;
+  text: string;
+  fontSize: number;
+  fontFamily: string;
+  engravingDepth: number;
+  positionX: number;
+  positionY: number;
+  isVisible: boolean;
+}) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const textureRef = useRef<THREE.Texture | null>(null);
+  const [debugInfo, setDebugInfo] = useState('');
+  const [text, setText] = useState('I love you Sarah,\nfrom now on I\'m always\nhere if you\'ll need me\n- [your name]');
+  const [fontSize, setFontSize] = useState(55);
+  const [fontFamily, setFontFamily] = useState('cursive');
+  const [engravingDepth, setEngravingDepth] = useState(1.0); // 100%
+  const [positionX, setPositionX] = useState(0.32); // -36% from center (0.5 - 0.18 = 0.32)
+  const [positionY, setPositionY] = useState(0.5); // 0% = center
+  const [engravingEnabled, setEngravingEnabled] = useState(false); // Off by default
+
+  useEffect(() => {
+    if (!isVisible) return;
+    
+    const canvas = canvasRef.current;
+    if (!canvas) {
+      console.log('❌ Canvas not found');
+      setDebugInfo('Canvas not found');
+      return;
+    }
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) {
+      console.log('❌ Context not found');
+      setDebugInfo('Context not found');
+      return;
+    }
+
+    console.log('✅ High-res canvas initialized:', canvas.width, 'x', canvas.height);
+
+    // Initialize with white background (255 = no bump effect, preserves original material)
+    ctx.fillStyle = '#FFFFFF';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Create high-resolution texture
+    const texture = new THREE.Texture(canvas);
+    texture.needsUpdate = true;
+    texture.flipY = false;
+    texture.wrapS = THREE.RepeatWrapping;
+    texture.wrapT = THREE.RepeatWrapping;
+    texture.generateMipmaps = false; // Better for text
+    texture.minFilter = THREE.LinearFilter;
+    texture.magFilter = THREE.LinearFilter;
+    
+    textureRef.current = texture;
+    onTextureUpdate(texture, engravingDepth);
+    
+    console.log('✅ High-res engraving texture created');
+    setDebugInfo('High-res texture created');
+  }, [onTextureUpdate, isVisible]);
+
+  const renderText = useCallback(() => {
+    const canvas = canvasRef.current;
+    const ctx = canvas?.getContext('2d');
+    if (!canvas || !ctx || !text.trim()) return;
+
+    console.log('📝 Rendering bump map text:', text, 'at position:', positionX, positionY);
+
+    // Clear canvas with white background (255 = no bump effect, preserves material color)
+    ctx.fillStyle = '#FFFFFF';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Enable anti-aliasing for smooth text
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+
+    // Save context for rotation
+    ctx.save();
+
+    // Calculate position based on sliders (0-1 range to canvas coordinates)
+    const centerX = positionX * canvas.width;
+    const centerY = positionY * canvas.height;
+
+    // Move to custom position and rotate -90 degrees
+    ctx.translate(centerX, centerY);
+    ctx.rotate(-Math.PI / 2); // -90 degrees in radians
+
+    // Configure text rendering for bump mapping
+    ctx.font = `bold ${fontSize}px ${fontFamily}`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    // Split text into lines if it contains line breaks
+    const lines = text.split('\n');
+    const lineHeight = fontSize * 1.2;
+    const startY = -((lines.length - 1) * lineHeight) / 2;
+
+    lines.forEach((line, index) => {
+      const y = startY + (index * lineHeight);
+      
+      // Calculate bump map color based on depth
+      // For engraved/carved effect: darker than white = deeper into surface
+      const bumpDepth = Math.round(255 - (engravingDepth * 200)); // Range from 255 (no effect) to 55 (deep)
+      
+      // Main engraved text (dark = carved in)
+      ctx.fillStyle = `rgb(${bumpDepth}, ${bumpDepth}, ${bumpDepth})`;
+      ctx.fillText(line, 0, y);
+      
+      // Add subtle edge highlighting for more realistic bump effect
+      if (engravingDepth > 0.3) {
+        // Create a slight offset highlight for carved edge effect
+        ctx.save();
+        ctx.globalCompositeOperation = 'lighten';
+        ctx.fillStyle = `rgb(${Math.min(255, 255 - engravingDepth * 50)}, ${Math.min(255, 255 - engravingDepth * 50)}, ${Math.min(255, 255 - engravingDepth * 50)})`;
+        ctx.translate(1, 1); // Slight offset for highlight
+        ctx.fillText(line, 0, y);
+        ctx.restore();
+      }
+    });
+
+    // Restore context
+    ctx.restore();
+
+    // Update texture
+    if (textureRef.current) {
+      textureRef.current.needsUpdate = true;
+      console.log('🔄 Bump map texture updated');
+      setDebugInfo(`Bump map text "${text.substring(0, 20)}..." at ${(positionX*100).toFixed(0)}%, ${(positionY*100).toFixed(0)}%`);
+    }
+  }, [text, fontSize, fontFamily, engravingDepth, positionX, positionY]);
+
+  const clearText = useCallback(() => {
+    const canvas = canvasRef.current;
+    const ctx = canvas?.getContext('2d');
+    if (!canvas || !ctx) return;
+
+    // Reset to white background (no bump effect, preserves original material)
+    ctx.fillStyle = '#FFFFFF';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    if (textureRef.current) {
+      textureRef.current.needsUpdate = true;
+      console.log('🧹 Text engraving cleared');
+      setDebugInfo('Engraving cleared');
+    }
+  }, []);
+
+  const previewText = useCallback(() => {
+    const sampleTexts = [
+      "Love Forever",
+      "Sarah & John\n2025",
+      "Always Yours",
+      "Forever\n&\nAlways"
+    ];
+    const randomText = sampleTexts[Math.floor(Math.random() * sampleTexts.length)];
+    setText(randomText);
+  }, []);
+
+  // Auto-render when text or settings change (only if engraving is enabled)
+  useEffect(() => {
+    if (engravingEnabled && text.trim()) {
+      renderText();
+    } else {
+      clearText();
+    }
+  }, [text, fontSize, fontFamily, engravingDepth, positionX, positionY, engravingEnabled, renderText, clearText]);
+
+  if (!isVisible || !engravingEnabled) return null;
+
+  // Render texture in background without showing UI
+  return (
+    <canvas
+      ref={canvasRef}
+      width={1024}
+      height={1024}
+      style={{ display: 'none' }} // Hidden but still renders texture
+    />
+  );
+}
+
 function Model({
   url,
   metalType,
   diamondType,
+  paintTexture,
 }: {
   url: string;
   metalType: MetalType;
   diamondType: DiamondType;
+  paintTexture?: THREE.Texture;
 }) {
   const { scene } = useGLTF(url);
   const { scene: r3fScene } = useThree();
@@ -98,26 +285,50 @@ function Model({
   const { color: metalColor, roughness } = METAL_SETTINGS[metalType];
   const diamondSettings = DIAMOND_SETTINGS[diamondType];
 
-  // Load the HDR specific to the diamond type
   const diamondHDR = useLoader(RGBELoader, diamondSettings.hdrUrl);
-  
-  // Also load the environment HDR (using the real diamond HDR for environment)
   const environmentHDR = useLoader(
     RGBELoader,
     'https://cdn.shopify.com/s/files/1/0754/1676/4731/files/custom5.hdr?v=1752937460'
   );
 
+  const materialCache = useRef<Map<string, THREE.MeshStandardMaterial>>(new Map());
   const meshes: React.ReactElement[] = [];
 
   useEffect(() => {
     r3fScene.environment = environmentHDR;
   }, [environmentHDR, r3fScene]);
 
+  useEffect(() => {
+    if (paintTexture) {
+      console.log('🎨 Model received paint texture:', paintTexture);
+      
+      materialCache.current.forEach((material, key) => {
+        console.log('🔄 Updating cached material for gradient depth effect:', key);
+        
+        material.map = paintTexture;
+        material.bumpMap = null;
+        material.bumpScale = 0;
+        material.normalMap = null;
+        material.normalScale = new THREE.Vector2(0, 0);
+        material.roughnessMap = paintTexture;
+        material.roughness = roughness * 1.2;
+        material.metalnessMap = null;
+        material.metalness = 1;
+        material.envMapIntensity = 1;
+        material.needsUpdate = true;
+      });
+    } else {
+      console.log('🎨 No paint texture received by model');
+    }
+  }, [paintTexture, roughness]);
+
   cloned.traverse((obj) => {
     if ((obj as Mesh).isMesh) {
       const mesh = obj as Mesh;
       const geometry = mesh.geometry;
       const name = mesh.name.toLowerCase();
+
+      console.log('🔍 Processing mesh:', name, 'has UVs:', !!geometry.attributes.uv);
 
       if (name.includes('diamond')) {
         meshes.push(
@@ -143,6 +354,38 @@ function Model({
           </mesh>
         );
       } else {
+        let material = materialCache.current.get(mesh.uuid);
+        
+        if (!material) {
+          console.log('🆕 Creating new persistent material for engraving:', name);
+          material = new THREE.MeshStandardMaterial({
+            color: metalColor,
+            metalness: 1,
+            roughness: roughness,
+            envMap: r3fScene.environment!,
+            envMapIntensity: 1,
+            side: THREE.DoubleSide,
+          });
+          
+          if (paintTexture) {
+            console.log('🎨 Applying gradient depth illusion to new material for mesh:', name);
+            material.map = paintTexture;
+            material.bumpMap = null;
+            material.bumpScale = 0;
+            material.normalMap = null;
+            material.normalScale = new THREE.Vector2(0, 0);
+            material.roughnessMap = paintTexture;
+            material.roughness = roughness * 1.2;
+          }
+          
+          materialCache.current.set(mesh.uuid, material);
+        } else {
+          material.color.set(metalColor);
+          material.metalness = 1;
+          material.roughness = roughness;
+          material.envMapIntensity = 1;
+        }
+
         meshes.push(
           <mesh
             key={mesh.uuid}
@@ -152,16 +395,8 @@ function Model({
             scale={mesh.scale}
             castShadow
             receiveShadow
-          >
-            <meshStandardMaterial
-              color={metalColor}
-              metalness={1}
-              roughness={roughness}
-              envMap={r3fScene.environment!}
-              envMapIntensity={1}
-              side={THREE.DoubleSide}
-            />
-          </mesh>
+            material={material}
+          />
         );
       }
     }
@@ -173,8 +408,6 @@ function Model({
 function SmartOrbitControls() {
   const controlsRef = useRef<any>(null);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const { gl } = useThree();
-  const domElement = gl.domElement;
 
   useEffect(() => {
     const controls = controlsRef.current;
@@ -222,10 +455,21 @@ function SmartOrbitControls() {
 export default function App() {
   const [modelType, setModelType] = useState<ModelType>('minimal');
   const [metalType, setMetalType] = useState<MetalType>('18k-white-gold');
-  const [diamondType, setDiamondType] = useState<DiamondType>('real-diamond'); // Default to real diamond
+  const [diamondType, setDiamondType] = useState<DiamondType>('real-diamond');
+  const [paintTexture, setPaintTexture] = useState<THREE.Texture | undefined>();
+  const [showPainter, setShowPainter] = useState(true); // Always on by default
+  const [debugInfo, setDebugInfo] = useState('No texture yet');
+  
+  // Engraving state
+  const [text, setText] = useState('I love you Sarah,\nfrom now on I\'m always\nhere if you\'ll need me\n- [your name]');
+  const [fontSize, setFontSize] = useState(55);
+  const [fontFamily, setFontFamily] = useState('cursive');
+  const [engravingDepth, setEngravingDepth] = useState(1.0);
+  const [positionX, setPositionX] = useState(0.32);
+  const [positionY, setPositionY] = useState(0.5);
+  const [engravingEnabled, setEngravingEnabled] = useState(false); // Off by default
 
   useEffect(() => {
-    // Sync from window.selectedMaterial if already set (backward compatibility)
     if (typeof window !== 'undefined' && 'selectedMaterial' in window) {
       if (window.selectedMaterial === 'silver') {
         setMetalType('925-silver');
@@ -242,7 +486,6 @@ export default function App() {
         }
       }
 
-      // Handle metal material changes
       if (event?.data?.type === 'materialChange') {
         const material = event.data.material;
         if (METAL_SETTINGS[material as MetalType]) {
@@ -250,7 +493,6 @@ export default function App() {
         }
       }
 
-      // Handle diamond type changes
       if (event?.data?.type === 'diamondChange') {
         const diamond = event.data.diamond;
         if (DIAMOND_SETTINGS[diamond as DiamondType]) {
@@ -265,6 +507,18 @@ export default function App() {
 
   const { url } = useMemo(() => MODEL_SETTINGS[modelType], [modelType]);
 
+  const handleTextureUpdate = useCallback((texture: THREE.Texture, depth: number) => {
+    console.log('📥 App received texture update:', texture, 'depth:', depth);
+    setPaintTexture(texture);
+    // Store depth in texture for material access
+    (texture as any).engravingDepth = depth;
+    setDebugInfo(`Texture updated: ${texture.image?.width}x${texture.image?.height}`);
+  }, []);
+
+  useEffect(() => {
+    console.log('🔄 App paint texture state changed:', paintTexture);
+  }, [paintTexture]);
+
   return (
     <div
       style={{
@@ -274,8 +528,22 @@ export default function App() {
         justifyContent: 'center',
         alignItems: 'center',
         background: 'transparent',
+        position: 'relative',
       }}
     >
+      {/* Hidden TextEngraver - still renders texture but no UI */}
+      <TextEngraver 
+        onTextureUpdate={handleTextureUpdate}
+        isVisible={showPainter}
+        engravingEnabled={engravingEnabled}
+        text={text}
+        fontSize={fontSize}
+        fontFamily={fontFamily}
+        engravingDepth={engravingDepth}
+        positionX={positionX}
+        positionY={positionY}
+      />
+
       <div
         style={{
           width: '60vw',
@@ -301,7 +569,12 @@ export default function App() {
               files="https://cdn.shopify.com/s/files/1/0754/1676/4731/files/custom5.hdr?v=1752937460"
               background={false}
             />
-            <Model url={url} metalType={metalType} diamondType={diamondType} />
+            <Model 
+              url={url} 
+              metalType={metalType} 
+              diamondType={diamondType}
+              paintTexture={paintTexture}
+            />
             <SmartOrbitControls />
           </Suspense>
         </Canvas>
