@@ -19,7 +19,7 @@ const MODEL_SETTINGS = {
     url: 'https://cdn.shopify.com/3d/models/133e8057a7d84b68/UV_heart_for_website.glb',
   },
   minimal: {
-    url: 'https://cdn.shopify.com/3d/models/706e71ca6f18cf41/new_tennis_necklace.glb',
+    url: 'https://cdn.shopify.com/3d/models/f70a4cea3b31f8db/small_circle_diamond.glb',
   },
   'diamond heart': {
     url: 'https://cdn.shopify.com/3d/models/886a83f03ae1cde6/diamond_of_heart.glb',
@@ -34,11 +34,21 @@ const MODEL_SETTINGS = {
     url: 'https://cdn.shopify.com/3d/models/617d0680da1c9a48/butterfly_diamond.glb',
   },
   tennis: {
-    url: 'https://cdn.shopify.com/3d/models/ccccbf91f4105d66/tennis_necklace.glb',
+    url: 'https://cdn.shopify.com/3d/models/706e71ca6f18cf41/new_tennis_necklace.glb',
   },
 } as const;
 
-// Metal material settings - easily adjustable
+// diamond heart: "https://cdn.shopify.com/3d/models/886a83f03ae1cde6/diamond_of_heart.glb"
+  //flower many diamonds: "https://cdn.shopify.com/3d/models/60290f2665af26de/flower_diamond.glb"
+  //flower one diamond: "https://cdn.shopify.com/3d/models/905ba1e3092db1f1/gold_flower.glb"
+  // minimal diamond circle: "https://cdn.shopify.com/3d/models/f70a4cea3b31f8db/small_circle_diamond.glb"
+  // loving: "https://cdn.shopify.com/3d/models/133e8057a7d84b68/UV_heart_for_website.glb"
+  // Tennis: "https://cdn.shopify.com/3d/models/ccccbf91f4105d66/tennis_necklace.glb"
+  // Tulip: "https://cdn.shopify.com/3d/models/91da56e870392bd6/vintage_tulip.glb"
+  // Oval: "https://cdn.shopify.com/3d/models/f847d87436ca7a32/oval.glb"
+  // butterfly diamond: "https://cdn.shopify.com/3d/models/617d0680da1c9a48/butterfly_diamond.glb"
+
+  // Metal material settings - easily adjustable
 const METAL_SETTINGS = {
   '14k-gold-plating': {
     color: '#F8E685',
