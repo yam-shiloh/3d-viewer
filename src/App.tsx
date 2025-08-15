@@ -34,11 +34,20 @@ const MODEL_SETTINGS = {
     url: 'https://cdn.shopify.com/3d/models/617d0680da1c9a48/butterfly_diamond.glb',
   },
   tennis: {
-    url: 'https://cdn.shopify.com/3d/models/ccccbf91f4105d66/tennis_necklace.glb',
+    url: 'https://cdn.shopify.com/3d/models/29c248d821631a21/new_tennis_necklace.glb',
   },
 } as const;
+// diamond heart: "https://cdn.shopify.com/3d/models/886a83f03ae1cde6/diamond_of_heart.glb"
+  //flower many diamonds: "https://cdn.shopify.com/3d/models/60290f2665af26de/flower_diamond.glb"
+  //flower one diamond: "https://cdn.shopify.com/3d/models/905ba1e3092db1f1/gold_flower.glb"
+  // minimal diamond circle: "https://cdn.shopify.com/3d/models/f70a4cea3b31f8db/small_circle_diamond.glb"
+  // loving: "https://cdn.shopify.com/3d/models/133e8057a7d84b68/UV_heart_for_website.glb"
+  // Tennis: "https://cdn.shopify.com/3d/models/29c248d821631a21/new_tennis_necklace.glb"
+  // Tulip: "https://cdn.shopify.com/3d/models/91da56e870392bd6/vintage_tulip.glb"
+  // Oval: "https://cdn.shopify.com/3d/models/f847d87436ca7a32/oval.glb"
+  // butterfly diamond: "https://cdn.shopify.com/3d/models/617d0680da1c9a48/butterfly_diamond.glb"
 
-// Metal material settings - easily adjustable
+  // Metal material settings - easily adjustable
 const METAL_SETTINGS = {
   '14k-gold-plating': {
     color: '#F8E685',
@@ -66,6 +75,12 @@ const METAL_SETTINGS = {
   },
 } as const;
 
+// Special material for demos meshes - easily adjustable
+const DEMOS_MATERIAL_SETTINGS = {
+  color: '#ffffff',
+  roughness: 0,
+};
+
 // Diamond material settings with different HDR URLs
 const DIAMOND_SETTINGS = {
   'real-diamond': {
@@ -92,11 +107,11 @@ const DIAMOND_SETTINGS = {
     hdrUrl: 'https://cdn.shopify.com/s/files/1/0754/1676/4731/files/brown_photostudio_04_1k.hdr?v=1753809331',
   },
   'ruby': {
-    bounces: 2,
+    bounces: 0,
     ior: 2.4,
     fresnel: 0,
     aberrationStrength: 0,
-    color: '#f74444',
+    color: '#ffffff',
     fastChroma: true,
     toneMapped: false,
     hdrUrl: 'https://cdn.shopify.com/s/files/1/0754/1676/4731/files/white_40f4e004-e07c-46be-8d0d-8bda61f2e966.hdr?v=1754676270',
@@ -470,6 +485,41 @@ function Model({
               toneMapped={emeraldSettings.toneMapped}
             />
           </mesh>
+        );
+      } else if (name.includes('demos')) {
+        // Special material for demos meshes
+        let demosMaterial = materialCache.current.get(mesh.uuid + '_demos');
+        
+        if (!demosMaterial) {
+          console.log('🆕 Creating new demos material for mesh:', name);
+          demosMaterial = new THREE.MeshStandardMaterial({
+            color: DEMOS_MATERIAL_SETTINGS.color,
+            metalness: 1,
+            roughness: DEMOS_MATERIAL_SETTINGS.roughness,
+            envMap: r3fScene.environment!,
+            envMapIntensity: 1,
+            side: THREE.DoubleSide,
+          });
+          
+          materialCache.current.set(mesh.uuid + '_demos', demosMaterial);
+        } else {
+          demosMaterial.color.set(DEMOS_MATERIAL_SETTINGS.color);
+          demosMaterial.metalness = 1;
+          demosMaterial.roughness = DEMOS_MATERIAL_SETTINGS.roughness;
+          demosMaterial.envMapIntensity = 1;
+        }
+
+        meshes.push(
+          <mesh
+            key={mesh.uuid}
+            geometry={geometry}
+            position={mesh.position}
+            rotation={mesh.rotation}
+            scale={mesh.scale}
+            castShadow
+            receiveShadow
+            material={demosMaterial}
+          />
         );
       } else {
         let material = materialCache.current.get(mesh.uuid);
