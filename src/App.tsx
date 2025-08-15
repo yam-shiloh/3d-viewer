@@ -34,7 +34,7 @@ const MODEL_SETTINGS = {
     url: 'https://cdn.shopify.com/3d/models/617d0680da1c9a48/butterfly_diamond.glb',
   },
   tennis: {
-    url: 'https://cdn.shopify.com/3d/models/14aa358c9d0226bc/new_tennis_necklace.glb',
+    url: 'https://cdn.shopify.com/3d/models/c407de3f8172fb3f/new_tennis_necklace.glb',
   },
 } as const;
 
