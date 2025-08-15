@@ -16,13 +16,25 @@ useGLTF.preload('https://cdn.shopify.com/3d/models/c1ba46f8c661e88e/smaller_diam
 
 const MODEL_SETTINGS = {
   loving: {
-    url: 'https://cdn.shopify.com/3d/models/6bce9a7ae62786dd/new_gold_heart_for_website.glb',
-  },
-  minimal: {
     url: 'https://cdn.shopify.com/3d/models/133e8057a7d84b68/UV_heart_for_website.glb',
   },
-  special: {
-    url: 'https://cdn.shopify.com/3d/models/6bce9a7ae62786dd/new_gold_heart_for_website.glb',
+  minimal: {
+    url: 'https://cdn.shopify.com/3d/models/f70a4cea3b31f8db/small_circle_diamond.glb',
+  },
+  'diamond heart': {
+    url: 'https://cdn.shopify.com/3d/models/886a83f03ae1cde6/diamond_of_heart.glb',
+  },
+  'diamond flower': {
+    url: 'https://cdn.shopify.com/3d/models/905ba1e3092db1f1/gold_flower.glb',
+  },
+  'Oval diamond': {
+    url: 'https://cdn.shopify.com/3d/models/f847d87436ca7a32/oval.glb',
+  },
+  butterfly: {
+    url: 'https://cdn.shopify.com/3d/models/617d0680da1c9a48/butterfly_diamond.glb',
+  },
+  tennis: {
+    url: 'https://cdn.shopify.com/3d/models/ccccbf91f4105d66/tennis_necklace.glb',
   },
 } as const;
 
@@ -33,11 +45,11 @@ const METAL_SETTINGS = {
     roughness: 0.25,
   },
   '18k-gold-plating': {
-    color: '#FFC328',
+    color: '#FFCF00',
     roughness: 0.15,
   },
   '18k-solid-gold': {
-    color: '#FFCF00',
+    color: '#FFC328',
     roughness: 0.1,
   },
   '925-silver': {
@@ -60,12 +72,15 @@ const DIAMOND_SETTINGS = {
     bounces: 2,
     ior: 2.4,
     fresnel: 0,
-    aberrationStrength: 0,
+    aberrationStrength: 0.00,
     color: '#ffffff',
     fastChroma: true,
     toneMapped: false,
-    hdrUrl: 'https://cdn.shopify.com/s/files/1/0754/1676/4731/files/custom5.hdr?v=1752937460',
+    hdrUrl: 'https://cdn.shopify.com/s/files/1/0754/1676/4731/files/white_40f4e004-e07c-46be-8d0d-8bda61f2e966.hdr?v=1754676270',
   },
+  // white diamond HDR: "https://cdn.shopify.com/s/files/1/0754/1676/4731/files/white_40f4e004-e07c-46be-8d0d-8bda61f2e966.hdr?v=1754676270"
+  // grayish diamond HDR: "https://cdn.shopify.com/s/files/1/0754/1676/4731/files/custom5.hdr?v=1752937460"
+  // brown diamond HDR: "https://cdn.shopify.com/s/files/1/0754/1676/4731/files/brown_photostudio_04_1k.hdr?v=1753809331"
   'demi-diamond': {
     bounces: 2,
     ior: 2.4,
@@ -75,6 +90,26 @@ const DIAMOND_SETTINGS = {
     fastChroma: true,
     toneMapped: false,
     hdrUrl: 'https://cdn.shopify.com/s/files/1/0754/1676/4731/files/brown_photostudio_04_1k.hdr?v=1753809331',
+  },
+  'ruby': {
+    bounces: 2,
+    ior: 2.4,
+    fresnel: 0,
+    aberrationStrength: 0,
+    color: '#f74444',
+    fastChroma: true,
+    toneMapped: false,
+    hdrUrl: 'https://cdn.shopify.com/s/files/1/0754/1676/4731/files/white_40f4e004-e07c-46be-8d0d-8bda61f2e966.hdr?v=1754676270',
+  },
+  'emerald': {
+    bounces: 2,
+    ior: 2.4,
+    fresnel: 0,
+    aberrationStrength: 0,
+    color: '#047b36',
+    fastChroma: true,
+    toneMapped: false,
+    hdrUrl: 'https://cdn.shopify.com/s/files/1/0754/1676/4731/files/white_40f4e004-e07c-46be-8d0d-8bda61f2e966.hdr?v=1754676270',
   },
 } as const;
 
@@ -319,6 +354,10 @@ function Model({
   const diamondSettings = DIAMOND_SETTINGS[diamondType];
 
   const diamondHDR = useLoader(RGBELoader, diamondSettings.hdrUrl);
+  const rubySettings = DIAMOND_SETTINGS['ruby'];
+  const rubyHDR = useLoader(RGBELoader, rubySettings.hdrUrl);
+  const emeraldSettings = DIAMOND_SETTINGS['emerald'];
+  const emeraldHDR = useLoader(RGBELoader, emeraldSettings.hdrUrl);
   const environmentHDR = useLoader(
     RGBELoader,
     'https://cdn.shopify.com/s/files/1/0754/1676/4731/files/custom5.hdr?v=1752937460'
@@ -383,6 +422,52 @@ function Model({
               color={diamondSettings.color}
               fastChroma={diamondSettings.fastChroma}
               toneMapped={diamondSettings.toneMapped}
+            />
+          </mesh>
+        );
+      } else if (name.includes('ruby')) {
+        meshes.push(
+          <mesh
+            key={mesh.uuid}
+            geometry={geometry}
+            position={mesh.position}
+            rotation={mesh.rotation}
+            scale={mesh.scale}
+            castShadow
+            receiveShadow
+          >
+            <MeshRefractionMaterial
+              envMap={rubyHDR}
+              bounces={rubySettings.bounces}
+              ior={rubySettings.ior}
+              fresnel={rubySettings.fresnel}
+              aberrationStrength={rubySettings.aberrationStrength}
+              color={rubySettings.color}
+              fastChroma={rubySettings.fastChroma}
+              toneMapped={rubySettings.toneMapped}
+            />
+          </mesh>
+        );
+      } else if (name.includes('emerald')) {
+        meshes.push(
+          <mesh
+            key={mesh.uuid}
+            geometry={geometry}
+            position={mesh.position}
+            rotation={mesh.rotation}
+            scale={mesh.scale}
+            castShadow
+            receiveShadow
+          >
+            <MeshRefractionMaterial
+              envMap={emeraldHDR}
+              bounces={emeraldSettings.bounces}
+              ior={emeraldSettings.ior}
+              fresnel={emeraldSettings.fresnel}
+              aberrationStrength={emeraldSettings.aberrationStrength}
+              color={emeraldSettings.color}
+              fastChroma={emeraldSettings.fastChroma}
+              toneMapped={emeraldSettings.toneMapped}
             />
           </mesh>
         );
