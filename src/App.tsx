@@ -34,7 +34,7 @@ const MODEL_SETTINGS = {
     url: 'https://cdn.shopify.com/3d/models/617d0680da1c9a48/butterfly_diamond.glb',
   },
   tennis: {
-    url: 'https://cdn.shopify.com/3d/models/c407de3f8172fb3f/new_tennis_necklace.glb',
+    url: 'https://cdn.shopify.com/3d/models/1a187af7d0f3b961/new_tennis_necklace.glb',
   },
 } as const;
 
@@ -43,7 +43,7 @@ const MODEL_SETTINGS = {
   //flower one diamond: "https://cdn.shopify.com/3d/models/905ba1e3092db1f1/gold_flower.glb"
   // minimal diamond circle: "https://cdn.shopify.com/3d/models/f70a4cea3b31f8db/small_circle_diamond.glb"
   // loving: "https://cdn.shopify.com/3d/models/133e8057a7d84b68/UV_heart_for_website.glb"
-  // Tennis: "https://cdn.shopify.com/3d/models/ccccbf91f4105d66/tennis_necklace.glb"
+  // Tennis: "https://cdn.shopify.com/3d/models/1a187af7d0f3b961/new_tennis_necklace.glb"
   // Tulip: "https://cdn.shopify.com/3d/models/91da56e870392bd6/vintage_tulip.glb"
   // Oval: "https://cdn.shopify.com/3d/models/f847d87436ca7a32/oval.glb"
   // butterfly diamond: "https://cdn.shopify.com/3d/models/617d0680da1c9a48/butterfly_diamond.glb"
